@@ -1,0 +1,248 @@
+/* 
+   xigor - little generic flagging program for Xorg systray
+   Copyright (C) 2017  Thomas Thiel
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software Foundation,
+   Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+*/
+
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <gtk/gtk.h>
+
+// some defaultvalues for all parameters
+#define D_SYSTRAYICON "/usr/share/icons/oxygen/base/64x64/actions/mail-receive.png"
+#define D_ACTIVEICON  "/usr/share/icons/oxygen/base/64x64/apps/internet-mail.png"
+#define D_ERRORICON   "/usr/share/icons/oxygen/base/64x64/actions/application-exit.png"
+#define D_MONITORFILE ".xigor-trigger"
+#define D_DELAY 30
+
+// config variables
+unsigned int delay;
+char *monitorfile;
+char *activeicon;
+char *systrayicon;
+char *erroricon;
+unsigned int debug;
+
+// systray icon reference
+GtkStatusIcon * st_icon;
+
+// storage for modifaction time of trigger file
+time_t          mod_time;
+
+// helper, returns modification time of trigger file
+// or display error icon in systray
+time_t getModTimeMonitorFile() {
+  struct stat fileStat;
+  if(stat(monitorfile,&fileStat) >= 0) {
+    return fileStat.st_mtime;
+  } else gtk_status_icon_set_from_file(st_icon,erroricon); 
+};
+
+// Systray icon click callback handler
+void on_icon_clicked (GtkStatusIcon *status_icon, GdkEventButton *event, gpointer user_data)
+{
+  // get pressed mouse button; if left button was used,
+  // reset the icon to the default one. If any other button was pressed,
+  // remove the systray icon and close the application.
+ if (event->button==1) {
+   gtk_status_icon_set_from_file(st_icon,systrayicon);
+   mod_time=getModTimeMonitorFile();
+   if (debug) fprintf(stdout,"on_icon_clicked(): mod_time reset. (%d)\n",mod_time);
+ } else gtk_main_quit();
+}
+
+// callback handler for delay. handles the checking of
+// the trigger file for changes and the update of the
+// icon if a change was detected.
+static gboolean on_timeout (gpointer userdata)
+{
+  if (mod_time==0) {
+    mod_time=getModTimeMonitorFile();
+    gtk_status_icon_set_from_file(st_icon,systrayicon);
+    if (debug) fprintf(stdout,"on_timeout(): mod_time initialized (%d)\n",mod_time);
+  } else {
+    if (mod_time<getModTimeMonitorFile()) {
+      gtk_status_icon_set_from_file(st_icon,activeicon);
+    if (debug) fprintf(stdout,"on_timeout(): mod file triggered (%d<%d)\n",mod_time,getModTimeMonitorFile());
+  } else {
+    if (debug) fprintf(stdout,"on_timeout(): timeout reached, no trigger (%d>=%d)\n",mod_time,getModTimeMonitorFile());
+    };
+  };
+  return TRUE;
+}
+
+
+// prints usage to stderr
+void usage() {
+  fprintf(stderr,"usage: xigor [options]\n");
+  fprintf(stderr,"\t-h\t\tprint this usage and exit\n");
+  fprintf(stderr,"\t-d\t\tdelay between checks for changes of the trigger file\n");
+  fprintf(stderr,"\t-D\t\tdo not detach and print some debug output to stdout\n");
+  fprintf(stderr,"\t-m\t\tpath to the monitorfile (default: ~/.xigor-trigger)\n");
+  fprintf(stderr,"\t-s\t\tpath to the normal systray icon file\n");
+  fprintf(stderr,"\t-a\t\tpath to the flagged systray icon file\n");
+  fprintf(stderr,"\t-e\t\tpath to the error systray icon file\n\n");
+  fprintf(stderr,"spawns a flagging icon that displays the icon specified by -s in your desktop environments systray area. This icon will be changed into the one specified by -a, as soon as the file specified by -m is changed/touched. The icon specified by -e is used if the monitor file is not existing or cannot be examined by stat(). Detaches immediately after start and outputs the PID of the detached process on sdtdout before doing so.\n\n");
+  fprintf(stderr,"Copyright (C) 2017  Thomas Thiel\nxigor comes with ABSOLUTELY NO WARRANTY; This is free software, and you are welcome to redistribute it within the terms of the GPLv3.\n\n");
+};
+
+// main func
+int main (int argc, char *argv[])
+{
+
+  // prefill config with defaults
+	delay				= D_DELAY;
+	activeicon	= D_ACTIVEICON;
+	systrayicon	= D_SYSTRAYICON;
+	erroricon		= D_ERRORICON;
+ 
+  // get the home directory of the user
+  const char *home=getenv("HOME");
+
+  // build the default path for the trigger file
+  monitorfile = (char*) malloc(((strlen(D_MONITORFILE)+strlen(home))+2)*sizeof(char));
+  strcpy(monitorfile, home);
+  strcat(monitorfile, "/");
+  strcat(monitorfile, D_MONITORFILE);
+
+  debug=FALSE;
+
+  int index;
+  int c;
+
+  opterr = 0;
+
+  // parse command line switches
+  while ((c = getopt (argc, argv, "Dhd:m:a:s:e:")) != -1)
+	switch (c)
+		{
+		case 'D':
+			debug=TRUE;
+			break;
+		case 'd':
+			delay = strtoul(optarg,NULL,10);
+			break;
+		case 'm':
+			monitorfile = optarg;
+			break;
+		case 'a':
+			activeicon = optarg;
+			break;
+		case 's':
+			systrayicon = optarg;
+			break;
+		case 'e':
+			erroricon = optarg;
+			break;
+		case 'h':
+		  usage();
+		  exit(0);
+		  break;
+		case '?':
+			if (optopt == 'd')
+				fprintf (stderr, "Option -%c requires an argument.\n", optopt);
+			else if (optopt == 'm')
+				fprintf (stderr, "Option -%c requires an argument.\n", optopt);
+			else if (optopt == 'a')
+				fprintf (stderr, "Option -%c requires an argument.\n", optopt);
+			else if (optopt == 's')
+				fprintf (stderr, "Option -%c requires an argument.\n", optopt);
+			else if (optopt == 'e')
+				fprintf (stderr, "Option -%c requires an argument.\n", optopt);
+			else if (isprint (optopt))
+				fprintf (stderr, "Unknown option `-%c'.\n", optopt);
+			else
+				fprintf (stderr,
+									"Unknown option character `\\x%x'.\n",
+									optopt);
+			usage();
+			return 1;
+      default:
+        usage();
+        abort ();
+	}
+
+  // dump config if in debug mode
+  if (debug) {
+    fprintf(stdout, "options parsed. Config:\n");
+    fprintf(stdout, "Delay:       %i \n", delay);
+    fprintf(stdout, "Monitorfile: %s \n", monitorfile);
+    fprintf(stdout, "Activeicon:  %s \n", activeicon);
+    fprintf(stdout, "Systrayicon: %s \n", systrayicon);
+    fprintf(stdout, "Erroricon:   %s \n", erroricon);
+    fprintf(stdout, "Debug:       %i \n", debug);
+  }
+
+  // check for icon files and bail out if anyone is missing
+  if( access( activeicon, F_OK ) != 0 ) {
+    fprintf(stderr, "Activeicon file not found: %s\n", activeicon);
+    exit(150);
+  };
+  if( access( systrayicon, F_OK ) != 0 ) {
+    fprintf(stderr, "Systrayicon file not found: %s\n", systrayicon);
+    exit(150);
+  };
+  if( access( erroricon, F_OK ) != 0 ) {
+    fprintf(stderr, "Erroricon file not found: %s\n", erroricon);
+    exit(150);
+  };
+
+  // init modification time of trigger file.
+  mod_time=0;
+
+  /* GTK+ initialisieren */
+  gtk_init (&argc, &argv);
+
+  // prepare systray icon and its connections
+  st_icon = gtk_status_icon_new_from_file (systrayicon);
+  g_signal_connect (st_icon, "button-press-event", G_CALLBACK (on_icon_clicked), NULL);
+
+  // prepare calling of our delay-expiration-handler
+  g_timeout_add_seconds(delay, on_timeout, NULL);
+
+
+  // fork and detach everything
+  if (!debug) {
+    int pid = fork();
+    /* An error occurred */
+    if (pid < 0)
+        exit(255);
+    /* Success: Let the parent terminate */
+    if (pid > 0) {
+        fprintf(stdout,"%d\n",pid);
+        free(monitorfile);
+        exit(0);
+    };
+  }
+
+  // close std(in|out|err), we do not need them anymore...
+  close(0);
+  close(1);
+  close(2);
+
+  // start gtk event loop
+  gtk_main();
+
+  // clean up and wave goodbye
+  free(monitorfile);
+  return 0;
+}
+
