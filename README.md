@@ -15,7 +15,7 @@ Directly after the startup of the program, it dumps its PID to stdout and detach
 itself, so you can script around with it very easily.
 
 ## Usage
-
+```
 $ xigor -h
 
 usage: xigor [options]
@@ -28,7 +28,7 @@ usage: xigor [options]
         -e              path to the error systray icon file
 
 spawns a flagging icon that displays the icon specified by -s in your desktop environments systray area. This icon will be changed into the one specified by -a, as soon as the file specified by -m is changed/touched. The icon specified by -e is used if the monitor file is not existing or cannot be examined by stat(). Detaches immediately after start and outputs the PID of the detached process on sdtdout before doing so.
-
+```
 ## Installation
 
 just using make will compile everything. Make sure that you have GTK+3 installed.
