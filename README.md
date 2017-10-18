@@ -41,11 +41,10 @@ just using make will compile everything. Make sure that you have GTK+3 installed
 
 Copyright (C) 2017  Thomas Thiel
 
-This program comes with ABSOLUTELY NO WARRANTY; This is free software, and you are welcome to redistribute it within the terms of the GPLv3.
+This program comes with ABSOLUTELY NO WARRANTY; This is free software, and you are welcome to redistribute it within the terms of the MIT/X11 License as stated in the LICENSE file.
 
 The included XPM filex were converted from the original xbm files
-included with X11 and are subject to the X11 license and their respective
+included with X11 and are subject to the MIT/X11 license and their respective
 creators (whose names I did not find to credit duely). I included these files
 in the hope that I may do so in the spirit of FOSS.
-
 
