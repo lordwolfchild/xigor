@@ -8,7 +8,11 @@ with the left mousebutton, it will be reset to the original icon and waits for t
 next change/touch of the triggerfile. A click with any other mousebutton will remove 
 the icon.and terminate the application.
 
-It can be used as a mail notification or any other sort of flagging style info
+Xigor utilizes the orignal X11 pixmaps that xbiff was using as a default. You can 
+specify other files on the command line. Xigor understands all file formats that 
+GTK+3 can read.
+
+Xigor can be used as a mail notification or any other sort of flagging style info
 There can be as many instances as you like.
 
 Directly after the startup of the program, it dumps its PID to stdout and detaches 
@@ -38,3 +42,10 @@ just using make will compile everything. Make sure that you have GTK+3 installed
 Copyright (C) 2017  Thomas Thiel
 
 This program comes with ABSOLUTELY NO WARRANTY; This is free software, and you are welcome to redistribute it within the terms of the GPLv3.
+
+The included XPM filex were converted from the original xbm files
+included with X11 and are subject to the X11 license and their respective
+creators (whose names I did not find to credit duely). I included these files
+in the hope that I may do so in the spirit of FOSS.
+
+
