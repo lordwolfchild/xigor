@@ -121,7 +121,7 @@ void usage() {
   fprintf(stderr,"\t-e\t\tpath to the error systray icon file\n\n");
   fprintf(stderr,"spawns a flagging icon that displays the icon specified by -s in your desktop environments systray area. This icon will be changed into the one specified by -a, as soon as the file specified by -m is changed/touched. The icon specified by -e is used if the monitor file is not existing or cannot be examined by stat(). Detaches immediately after start and outputs the PID of the detached process on sdtdout before doing so.\n\n");
   fprintf(stderr,"If you omit the icon files, the original X11 pixmaps that xbiff used are shown.\n\n");
-  fprintf(stderr,"Copyright (C) 2017  Thomas Thiel\nxigor comes with ABSOLUTELY NO WARRANTY; This is free software, and you are welcome to redistribute it within the terms of the GPLv3.\n\n");
+  fprintf(stderr,"Copyright (C) 2017  Thomas Thiel\nxigor comes with ABSOLUTELY NO WARRANTY; This is free software, and you are welcome to redistribute it within the terms of the X11/MIT license.\n\n");
 };
 
 // main func
